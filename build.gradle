@@ -220,7 +220,13 @@ test {
     }
 }
 
-compileJava.dependsOn tasks.named('openApiGenerate')
+def openApiSpecFile = file("$rootDir/api-registry/api/openapi/reportportal-api.yaml")
+if (openApiSpecFile.exists()) {
+    compileJava.dependsOn tasks.named('openApiGenerate')
+} else {
+    println "OpenAPI spec not found at: ${openApiSpecFile}. Skipping openApiGenerate."
+}
+
 compileJava.dependsOn tasks.named('downloadManifestSchema')
 publish.dependsOn build
 publish.mustRunAfter build

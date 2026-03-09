@@ -1,0 +1,29 @@
+rp:
+  amqp:
+    host: localhost
+  db:
+    host: localhost
+  plugins:
+    rootDir: ${java.io.tmpdir}${file.separator}reportportal${file.separator}plugins
+  datasource:
+    maximumPoolSize: 5
+
+datastore:
+  type: filesystem
+  endpoint: http://localhost:9000
+  accessKey:
+  secretKey:
+  path: ${java.io.tmpdir}${file.separator}reportportal${file.separator}datastore
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    com.epam.ta.reportportal.core:
+      integration:
+        migration: debug
+      analyzer: debug
+  file:
+    name: ${java.io.tmpdir}${file.separator}reportportal${file.separator}logs${file.separator}${spring.application.name}.log
+server:
+  servlet:
+    context-path: '/api'
