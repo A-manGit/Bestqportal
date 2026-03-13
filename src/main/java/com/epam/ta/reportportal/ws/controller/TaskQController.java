@@ -91,7 +91,8 @@ public class TaskQController {
             @RequestBody TaskQResource request,
             @AuthenticationPrincipal ReportPortalUser user) {
 
-        final ReportPortalUser.ProjectDetails projectDetails = projectExtractor.extractProjectDetails(user, projectName);
+        final ReportPortalUser.ProjectDetails projectDetails = projectExtractor.extractProjectDetails(user,
+                projectName);
 
         TaskQ existing = taskQRepository.findById(id)
                 .orElseThrow(() -> new ReportPortalException(ErrorType.NOT_FOUND, id));
@@ -148,7 +149,8 @@ public class TaskQController {
             @PathVariable Integer id,
             @AuthenticationPrincipal ReportPortalUser user) {
 
-        final ReportPortalUser.ProjectDetails projectDetails = projectExtractor.extractProjectDetails(user, projectName);
+        final ReportPortalUser.ProjectDetails projectDetails = projectExtractor.extractProjectDetails(user,
+                projectName);
 
         TaskQ existing = taskQRepository.findById(id)
                 .orElseThrow(() -> new ReportPortalException(ErrorType.NOT_FOUND, id));
