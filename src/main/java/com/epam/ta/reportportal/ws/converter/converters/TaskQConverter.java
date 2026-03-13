@@ -12,12 +12,20 @@ public final class TaskQConverter {
 
   public static final Function<TaskQ, TaskQResource> TO_RESOURCE = entity -> {
     TaskQResource r = new TaskQResource();
-    r.setId(entity.getId());
-    r.setName(entity.getName());
-    r.setSummary(entity.getSummary());
+     r.setId(entity.getId());
+    r.setProjectId(entity.getProjectId());
+    r.setTitle(entity.getTitle());
+    r.setLable(entity.getLable());
     r.setStatus(entity.getStatus());
+    r.setVideoUrl(entity.getVideoUrl());
+    r.setCreator(entity.getCreator());
+    r.setSub(entity.getSub());
+    r.setAutomation(entity.getAutomation());
+    r.setPriority(entity.getPriority());
+    r.setSummary(entity.getSummary());
+    r.setSteps(entity.getSteps());
+    r.setRemarks(entity.getRemarks());
     r.setCreatedAt(entity.getCreatedAt());
-    r.setCreatedBy(entity.getCreatedBy());
     return r;
   };
 }

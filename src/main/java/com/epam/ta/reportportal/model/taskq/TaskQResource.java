@@ -6,9 +6,17 @@ import lombok.Data;
 @Data
 public class TaskQResource {
   private Integer id;
-  private String name;
-  private String summary;
+  private Long projectId;
+  private String title;
+  private String lable;
   private String status;
+  private String videoUrl;
+  private String creator;
+  private String sub;
+  private Boolean automation;
+  private String priority;
+  private String summary;
+  private String steps;
+  private String remarks;
   private LocalDateTime createdAt;
-  private Long createdBy;
 }

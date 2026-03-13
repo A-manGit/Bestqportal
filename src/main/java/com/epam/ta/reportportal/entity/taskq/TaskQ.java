@@ -31,17 +31,33 @@ public class TaskQ {
   private Long projectId;
 
   @Column(nullable = false)
-  private String name;
+  private String title;
+
+  private String lable;
+
+  private String status;
+
+  @Column(name = "video_url")
+  private String videoUrl;
+
+  private String creator;
+
+  private String sub;
+
+  private Boolean automation;
+
+  private String priority;
 
   @Column(columnDefinition = "TEXT")
   private String summary;
 
-  private String status;
+  @Column(columnDefinition = "TEXT")
+  private String steps;
+
+  @Column(columnDefinition = "TEXT")
+  private String remarks;
 
   @Column(name = "created_at")
   private LocalDateTime createdAt;
-
-  @Column(name = "created_by")
-  private Long createdBy;
 
 }
