@@ -6,6 +6,7 @@ import com.epam.ta.reportportal.dao.TaskQRepository;
 import com.epam.ta.reportportal.entity.taskq.TaskQ;
 import com.epam.ta.reportportal.util.ProjectExtractor;
 import com.epam.ta.reportportal.ws.converter.converters.TaskQConverter;
+import com.epam.ta.reportportal.ws.converter.PagedResourcesAssembler;
 import java.time.LocalDateTime;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.epam.ta.reportportal.auth.permissions.Permissions.ASSIGNED_TO_PROJECT;
@@ -162,4 +164,27 @@ public class TaskQController {
         taskQRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    @GetMapping("/search")
+    @ResponseStatus(OK)
+    @Operation(summary = "Search matching results")
+    public Page<TaskQResource> getTasks(
+            @PathVariable String projectName,
+            @RequestParam("query") String query,
+            Pageable pageable,
+            @AuthenticationPrincipal ReportPortalUser user) {
+
+        final ReportPortalUser.ProjectDetails projectDetails = projectExtractor.extractProjectDetails(user,
+                projectName);
+
+        org.springframework.data.domain.Page<TaskQ> page = taskQRepository
+                .findByProjectIdAndTitleContainingIgnoreCase(
+                        projectDetails.getProjectId(),
+                        query,
+                        pageable);
+
+        return PagedResourcesAssembler
+                .pageConverter(TaskQConverter.TO_RESOURCE)
+                .apply(page);
+    }
 }

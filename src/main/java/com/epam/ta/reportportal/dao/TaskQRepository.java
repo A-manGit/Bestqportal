@@ -9,4 +9,9 @@ public interface TaskQRepository extends JpaRepository<TaskQ, Integer> {
 
   Page<TaskQ> findByProjectId(Long projectId, Pageable pageable);
 
+  Page<TaskQ> findByProjectIdAndTitleContainingIgnoreCase(
+      Long projectId,
+      String title,
+      Pageable pageable);
+
 }
