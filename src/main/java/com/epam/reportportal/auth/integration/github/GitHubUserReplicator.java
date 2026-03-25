@@ -28,6 +28,8 @@ import com.epam.reportportal.auth.dao.UserRepository;
 import com.epam.reportportal.auth.entity.Metadata;
 import com.epam.reportportal.auth.entity.attachment.BinaryData;
 import com.epam.reportportal.auth.entity.project.Project;
+import com.epam.reportportal.auth.entity.project.ProjectRole;
+import com.epam.reportportal.auth.entity.user.ProjectUser;
 import com.epam.reportportal.auth.entity.user.User;
 import com.epam.reportportal.auth.entity.user.UserRole;
 import com.epam.reportportal.auth.entity.user.UserType;
@@ -35,6 +37,7 @@ import com.epam.reportportal.auth.integration.AbstractUserReplicator;
 import com.epam.reportportal.auth.oauth.UserSynchronizationException;
 import com.epam.reportportal.auth.rules.commons.validation.BusinessRule;
 import com.epam.reportportal.auth.rules.exception.ErrorType;
+import com.epam.reportportal.auth.rules.exception.ReportPortalException;
 import com.epam.reportportal.auth.util.PersonalProjectService;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
@@ -60,6 +63,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 public class GitHubUserReplicator extends AbstractUserReplicator {
+
+  private static final String DEFAULT_PROJECT_NAME = "default";
 
   public GitHubUserReplicator(UserRepository userRepository, ProjectRepository projectRepository,
       PersonalProjectService personalProjectService, UserBinaryDataService userBinaryDataService,
@@ -102,7 +107,8 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
   }
 
   /**
-   * Replicates GitHub user to internal database (if does NOT exist). Updates if exist. Creates
+   * Replicates GitHub user to internal database (if does NOT exist). Updates if
+   * exist. Creates
    * personal project for that user
    *
    * @param userResource GitHub user to be replicated
@@ -116,7 +122,8 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
       if (UserType.GITHUB.equals(u.getUserType())) {
         updateUser(u, userResource, gitHubClient);
       } else {
-        //if user with such login exists, but it's not GitHub user than throw an exception
+        // if user with such login exists, but it's not GitHub user than throw an
+        // exception
         throw new UserSynchronizationException(
             "User with login '" + u.getLogin() + "' already exists");
       }
@@ -153,9 +160,26 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
     user.setUserType(UserType.GITHUB);
     user.setRole(UserRole.USER);
     user.setExpired(false);
-    final Project project = generatePersonalProject(user);
-    user.getProjects().addAll(project.getUsers());
+
+    // Instead of creating a personal project, add the user to the configured
+    // default project.
+    addUserToDefaultProject(user);
     return user;
+  }
+
+  private void addUserToDefaultProject(User user) {
+    Project defaultProject = projectRepository.findByName(DEFAULT_PROJECT_NAME)
+        .orElseThrow(() -> new ReportPortalException(ErrorType.BAD_REQUEST_ERROR,
+            "Default project '" + DEFAULT_PROJECT_NAME + "' was not found"));
+
+    ProjectUser membership = new ProjectUser()
+        .withUser(user)
+        .withProject(defaultProject)
+        .withProjectRole(ProjectRole.MEMBER);
+
+    // Keep both sides consistent in-memory
+    user.getProjects().add(membership);
+    defaultProject.getUsers().add(membership);
   }
 
   private void uploadAvatar(GitHubClient gitHubClient, User user, String avatarUrl) {
@@ -164,8 +188,7 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
       try (InputStream photoStream = photoRs.getBody().getInputStream()) {
         BinaryData photo = new BinaryData(photoRs.getHeaders().getContentType().toString(),
             photoRs.getBody().contentLength(),
-            photoStream
-        );
+            photoStream);
         uploadPhoto(user, photo);
       } catch (IOException e) {
         LOGGER.error("Unable to load photo for user {}", user.getLogin());
