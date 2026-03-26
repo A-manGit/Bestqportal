@@ -67,9 +67,9 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
   private static final String DEFAULT_PROJECT_NAME = "default";
 
   public GitHubUserReplicator(UserRepository userRepository, ProjectRepository projectRepository,
-      PersonalProjectService personalProjectService, UserBinaryDataService userBinaryDataService,
+        UserBinaryDataService userBinaryDataService,
       ContentTypeResolver contentTypeResolver, ApplicationEventPublisher eventPublisher) {
-    super(userRepository, projectRepository, personalProjectService, userBinaryDataService,
+    super(userRepository, projectRepository, null, userBinaryDataService,
         contentTypeResolver, eventPublisher);
   }
 
@@ -107,9 +107,8 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
   }
 
   /**
-   * Replicates GitHub user to internal database (if does NOT exist). Updates if
-   * exist. Creates
-   * personal project for that user
+   * Replicates GitHub user to internal database (if does NOT exist). Updates if exist.
+   * New users are attached to the default project.
    *
    * @param userResource GitHub user to be replicated
    * @param gitHubClient Configured github client
@@ -155,7 +154,7 @@ public class GitHubUserReplicator extends AbstractUserReplicator {
     user.setLogin(normalizeId(userResource.getLogin()));
     user.setUuid(UUID.randomUUID());
     user.setActive(Boolean.TRUE);
-
+    
     updateUser(user, userResource, gitHubClient);
     user.setUserType(UserType.GITHUB);
     user.setRole(UserRole.USER);

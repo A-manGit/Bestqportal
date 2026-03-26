@@ -17,8 +17,11 @@
 package com.epam.reportportal.auth.event;
 
 import com.epam.reportportal.auth.commons.ReportPortalUser;
+import com.epam.reportportal.auth.dao.ProjectRepository;
 import com.epam.reportportal.auth.dao.UserRepository;
 import com.epam.reportportal.auth.entity.project.Project;
+import com.epam.reportportal.auth.entity.project.ProjectRole;
+import com.epam.reportportal.auth.entity.user.ProjectUser;
 import com.epam.reportportal.auth.entity.user.User;
 import com.epam.reportportal.auth.event.activity.ProjectCreatedEvent;
 import com.epam.reportportal.auth.integration.github.RPOAuth2User;
@@ -45,7 +48,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UiAuthenticationSuccessEventHandler {
 
+  private static final String DEFAULT_PROJECT_NAME = "default";
+
   private final UserRepository userRepository;
+  private final ProjectRepository projectRepository;
   private final PersonalProjectService personalProjectService;
   private final ApplicationEventPublisher eventPublisher;
 
@@ -63,12 +69,36 @@ public class UiAuthenticationSuccessEventHandler {
 
     userRepository.updateLastLoginDate(username);
 
-    if (MapUtils.isEmpty(acquireUser(event.getAuthentication()).getProjectDetails())) {
+    ReportPortalUser signedInUser = acquireUser(event.getAuthentication());
+    if (MapUtils.isEmpty(signedInUser.getProjectDetails())) {
       User user = userRepository.findByLogin(username)
           .orElseThrow(() -> new ReportPortalException(ErrorType.USER_NOT_FOUND, username));
-      Project project = personalProjectService.generatePersonalProject(user);
-      user.getProjects().addAll(project.getUsers());
-      eventPublisher.publishEvent(new ProjectCreatedEvent(project.getId(), project.getName()));
+      if (user.getUserType() == com.epam.reportportal.auth.entity.user.UserType.GITHUB) {
+        addUserToDefaultProject(user);
+      } else {
+        Project project = personalProjectService.generatePersonalProject(user);
+        user.getProjects().addAll(project.getUsers());
+        eventPublisher.publishEvent(new ProjectCreatedEvent(project.getId(), project.getName()));
+      }
+    }
+  }
+
+  private void addUserToDefaultProject(User user) {
+    Project defaultProject = projectRepository.findByName(DEFAULT_PROJECT_NAME)
+        .orElseThrow(() -> new ReportPortalException(ErrorType.BAD_REQUEST_ERROR,
+            "Default project '" + DEFAULT_PROJECT_NAME + "' was not found"));
+
+    boolean hasMembership = user.getProjects().stream()
+        .anyMatch(projectUser -> projectUser.getProject() != null
+            && DEFAULT_PROJECT_NAME.equals(projectUser.getProject().getName()));
+
+    if (!hasMembership) {
+      ProjectUser membership = new ProjectUser()
+          .withUser(user)
+          .withProject(defaultProject)
+          .withProjectRole(ProjectRole.MEMBER);
+      user.getProjects().add(membership);
+      defaultProject.getUsers().add(membership);
     }
   }
 
